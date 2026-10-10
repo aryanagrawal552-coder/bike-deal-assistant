@@ -5,7 +5,7 @@ from groq import Groq
 load_dotenv()
 
 MODEL = "openai/gpt-oss-20b"
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+client = Groq(api_key=os.getenv("GROQ_API_KEY"), timeout=30.0, max_retries=1)
 
 
 def ask(system_prompt, user_message):
