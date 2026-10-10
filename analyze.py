@@ -9,7 +9,8 @@ Use ONLY the numbers and facts in the JSON you are given. Never invent prices, p
 Mention the fair range, and the verdict if there is one.
 If 'unsure' is true, say the estimate is less reliable for this kind of bike.
 If there are warnings, mention them briefly.
-Write rupee amounts with commas. Plain text only."""
+Write rupee amounts with commas. Plain text only.
+Do not mention warnings if there are none."""
 
 FIELD_QUESTIONS = {
     "brand": "Which brand is the bike?",
