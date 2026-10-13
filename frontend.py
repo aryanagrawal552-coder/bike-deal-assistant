@@ -1,7 +1,17 @@
+import os
 import requests
 import streamlit as st
 
-API_URL = "http://127.0.0.1:8000/analyze"
+
+def get_api_url():
+    try:
+        base = st.secrets["API_URL"]
+    except Exception:
+        base = os.getenv("API_URL", "http://127.0.0.1:8000")
+    return base.rstrip("/") + "/analyze"
+
+
+API_URL = get_api_url()
 
 VERDICT_LABEL = {
     "underpriced": "🟢 Underpriced, possibly a good deal",
@@ -52,7 +62,7 @@ if user_text:
 
     with st.spinner("Analyzing..."):
         try:
-            r = requests.post(API_URL, json={"text": combined}, timeout=60)
+            r = requests.post(API_URL, json={"text": combined}, timeout=90)
             if r.status_code == 200:
                 data = r.json()
                 reply = format_result(data)
@@ -60,6 +70,8 @@ if user_text:
             else:
                 detail = r.json().get("detail")
                 reply = detail if isinstance(detail, str) else "Please enter a longer description of the bike."
+        except requests.exceptions.Timeout:
+            reply = "The server is waking up from sleep, which can take up to a minute. Please send your message again."
         except requests.exceptions.RequestException:
             reply = "I can't reach the backend. Is the API server running?"
 
