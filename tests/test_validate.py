@@ -67,3 +67,10 @@ def test_input_dictionary_is_not_modified():
     data["city"] = "Chandigarh"
     validate(data, "x")
     assert data["city"] == "Chandigarh"
+    
+def test_invalid_owner_is_treated_as_missing():
+    data = base()
+    data["owner"] = "1st owner"
+    listing, missing, _ = validate(data, "x")
+    assert "owner" in missing
+    assert listing["owner"] is None

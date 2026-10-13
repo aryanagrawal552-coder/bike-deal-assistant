@@ -32,8 +32,19 @@ def check_rate_limit():
     _recent.append(now)
 
 
+class Listing(BaseModel):
+    brand: str | None = None
+    age: float | None = Field(default=None, ge=0, le=100)
+    kms_driven: float | None = Field(default=None, ge=0, le=2_000_000)
+    power: float | None = Field(default=None, ge=0, le=5000)
+    city: str | None = Field(default=None, max_length=50)
+    owner: str | None = None
+    listed_price: float | None = Field(default=None, ge=0, le=100_000_000)
+
+
 class AnalyzeRequest(BaseModel):
     text: str = Field(min_length=3, max_length=500)
+    previous_listing: Listing | None = None
 
 
 @app.get("/health")
@@ -45,7 +56,8 @@ def health():
 def analyze_listing(request: AnalyzeRequest):
     check_rate_limit()
     try:
-        result = analyze(request.text)
+        previous = request.previous_listing.model_dump() if request.previous_listing else None
+        result = analyze(request.text, previous)
     except ValueError:
         raise HTTPException(status_code=422, detail="Could not understand that listing. Try rephrasing it.")
     except Exception:

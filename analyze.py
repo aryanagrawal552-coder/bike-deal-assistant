@@ -1,6 +1,6 @@
 import json
 from extract import extract_listing
-from validate import validate
+from validate import validate, guess_brand
 from predict import predict_range, get_verdict
 from llm import ask
 
@@ -21,9 +21,34 @@ FIELD_QUESTIONS = {
     "owner": "Is it a first, second, third or fourth owner bike?",
 }
 
+FIELDS = ["brand", "age", "kms_driven", "power", "city", "owner", "listed_price"]
 
-def analyze(text):
-    listing, missing, warnings = validate(extract_listing(text), text)
+
+def merge_listings(previous, new):
+    merged = dict(previous or {})
+    for key in FIELDS:
+        if new.get(key) is not None:
+            merged[key] = new[key]
+        else:
+            merged.setdefault(key, None)
+    return merged
+
+
+def num(x):
+    if x is None:
+        return None
+    return int(x) if float(x).is_integer() else x
+
+
+def analyze(text, previous=None):
+    new = extract_listing(text)
+
+    new_brand = new.get("brand") or guess_brand(text)
+    if previous and new_brand and new_brand != previous.get("brand"):
+        previous = None  # a different bike, so start fresh
+
+    merged = merge_listings(previous, new)
+    listing, missing, warnings = validate(merged, text)
 
     if missing:
         return {
@@ -36,11 +61,11 @@ def analyze(text):
     verdict = get_verdict(listing.get("listed_price"), lower, upper)
 
     facts = {
-        "bike": f"{listing['brand']}, {listing['age']} years old, {listing['kms_driven']} km, "
-                f"{listing['power']}cc, {listing['city']}, {listing['owner']}",
+        "bike": f"{listing['brand']}, {num(listing['age'])} years old, {num(listing['kms_driven'])} km, "
+                f"{num(listing['power'])}cc, {listing['city']}, {listing['owner']}",
         "estimated_price": round(point),
         "fair_range": [round(lower), round(upper)],
-        "listed_price": listing.get("listed_price"),
+        "listed_price": num(listing.get("listed_price")),
         "verdict": verdict,
         "unsure": unsure,
         "warnings": warnings,
@@ -51,4 +76,5 @@ def analyze(text):
         "status": "ok",
         "facts": facts,
         "explanation": explanation,
+        "listing": listing,
     }

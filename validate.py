@@ -5,6 +5,7 @@ SUPPORTED_BRANDS = [
     "Hyosung", "Ideal", "Indian", "Jawa", "KTM", "Kawasaki", "LML", "Mahindra",
     "MV", "Rajdoot", "Royal Enfield", "Suzuki", "TVS", "Triumph", "Yamaha", "Yezdi",
 ]
+OWNER_VALUES = ["First Owner", "Second Owner", "Third Owner", "Fourth Owner Or More"]
 
 SUPPORTED_CITIES = [
     "Ahmedabad", "Bangalore", "Chennai", "Delhi", "Faridabad", "Ghaziabad",
@@ -48,6 +49,9 @@ def validate(listing, original_text):
         match = next((c for c in SUPPORTED_CITIES if c.lower() == str(listing["city"]).lower()), None)
         listing["city"] = match if match else "Other"
 
+    if listing.get("owner") not in OWNER_VALUES:
+        listing["owner"] = None
+        
     missing = [f for f in REQUIRED if listing.get(f) is None]
 
     age, kms, power = listing.get("age"), listing.get("kms_driven"), listing.get("power")

@@ -42,31 +42,34 @@ def format_result(data):
 
 st.set_page_config(page_title="Bike Deal Assistant", page_icon="🏍️")
 st.title("🏍️ Bike Deal Assistant")
-st.caption("Describe a used bike listing in plain English and check whether the price is fair.")
+st.caption("Describe a used bike listing in plain English and check whether the price is fair. "
+           "You can then ask follow-ups like \"what if the price is 80000?\"")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
-if "pending_text" not in st.session_state:
-    st.session_state.pending_text = ""
+if "listing" not in st.session_state:
+    st.session_state.listing = None
 
 if st.sidebar.button("New listing"):
     st.session_state.messages = []
-    st.session_state.pending_text = ""
+    st.session_state.listing = None
     st.rerun()
 
 user_text = st.chat_input("e.g. Honda Shine 125cc, 4 years old, 20,000 km, Delhi, first owner, asking 45000")
 
 if user_text:
     st.session_state.messages.append({"role": "user", "content": user_text})
-    combined = (st.session_state.pending_text + " " + user_text).strip()
+    payload = {"text": user_text}
+    if st.session_state.listing:
+        payload["previous_listing"] = st.session_state.listing
 
     with st.spinner("Analyzing..."):
         try:
-            r = requests.post(API_URL, json={"text": combined}, timeout=90)
+            r = requests.post(API_URL, json=payload, timeout=90)
             if r.status_code == 200:
                 data = r.json()
                 reply = format_result(data)
-                st.session_state.pending_text = combined if data["status"] == "need_more_info" else ""
+                st.session_state.listing = data.get("listing")
             else:
                 detail = r.json().get("detail")
                 reply = detail if isinstance(detail, str) else "Please enter a longer description of the bike."
@@ -80,3 +83,9 @@ if user_text:
 for m in st.session_state.messages:
     with st.chat_message(m["role"]):
         st.markdown(m["content"])
+
+if st.session_state.listing:
+    st.sidebar.markdown("**Current bike**")
+    for key, value in st.session_state.listing.items():
+        if value is not None:
+            st.sidebar.write(f"{key}: {value}")
